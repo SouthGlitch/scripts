@@ -1,0 +1,50 @@
+# ! /bin/bash
+set -e
+# if has a .git file, then try a git pull
+function doGit() {
+    if [[ -d .git ]]; then
+        git pull
+    fi
+}
+
+# checks that the current dir has folders to follow
+function cantFollow() {
+    local -r -a directories=(*/)
+    if [[ $directories == "*/" ]]; then
+        return 0
+    fi
+    return 1
+}
+
+# scan recursively the target folder
+function scanDir() {
+    # check if there are children directories that
+    # can be followed
+    if cantFollow; then
+        return 0
+    fi
+
+    local -r -a directories=(*/)
+    for dir in "${directories[@]}"; do
+        cd $dir
+        echo "current dir $(pwd)"
+        # pull if is git repo root folder
+        doGit
+        # execute for children directories
+        scanDir
+        cd ..
+    done
+}
+
+# $@ are targets directories
+function main() {
+    local -r executeDir="$(pwd)"
+    for dir in $@; do
+        cd $dir
+        scanDir
+        echo "execute directory: $executeDir"
+        cd $executeDir
+    done
+}
+
+main "$@"
